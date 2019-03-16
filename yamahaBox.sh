@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #cmdline
 host=$1
 command=$2
@@ -33,6 +33,54 @@ function sendRequest() {
 }
 ######################################################################
 
+function extractJsonValue() {
+    data=$1
+    key=$2
+    a="${data//\{/}"
+    b="${a//\}/}"
+    c="${b//\"/}"
+    string="${c// /}"
+
+    delimiter=","
+
+    while test "${string#*$delimiter}" != "$string" ; do
+
+        stringA="${string%%$delimiter*}"
+        string="${string#*$delimiter}"
+
+        echoValueAndExitIfMatched $stringA $key
+
+    done
+
+    echoValueAndExitIfMatched $string $key
+
+}
+
+######################################################################
+
+function echoValueAndExitIfMatched(){
+
+    value2=$1
+    key=$2
+
+    delimiter2=":"
+
+    while test "${value2#*$delimiter2}" != "$value2" ; do
+
+        key2="${value2%%$delimiter2*}"
+        value2="${value2#*$delimiter2}"
+
+        if [ "$key2" == "$key" ]; then
+            echo $value2
+            exit 0
+        fi
+
+    done
+
+}
+
+######################################################################
+
 function power(){
     
     if [ ! -z "$subcommand" ]; then
@@ -53,17 +101,20 @@ function power(){
             echo "ok"
 
         elif [ "$subcommand" == "status" ]; then
+
             #power status
             powerStatusResponse=$(sendRequest "getStatus")  
-            regex='"(power)":"((\\"|[^"])*)"'
 
-            [[ $powerStatusResponse =~ $regex ]]; 
+            value=$(extractJsonValue $powerStatusResponse "power")
 
-                if [ ${BASH_REMATCH[2]} == "standby" ]; then
+            if [ $value == "standby" ]; then
                 echo "off"
-                else
-                    echo "on"
-                fi
+           
+            elif [ $value == "on" ]; then
+                echo "on"
+            else
+                echo "error: $value"
+            fi
 
         else
             #invalid subcommand
@@ -86,11 +137,11 @@ function input(){
         if [ "$subcommand" == "status" ]; then
             #input status
             inputStatusResponse=$(sendRequest "getStatus")
-            regex='"(input)":"((\\"|[^"])*)"'
+         
+            value=$(extractJsonValue $inputStatusResponse "input")
 
-            [[ $inputStatusResponse =~ $regex ]]; 
-            echo "${BASH_REMATCH[2]}"
-
+            echo $value
+            
         else
             #set input to value
             inputResponse=$(sendRequest "setInput?input=${subcommand}") 
@@ -112,15 +163,18 @@ function mute(){
         if [ "$subcommand" == "status" ]; then
             #mute status
             muteStatusResponse=$(sendRequest "getStatus")  
-            regex='("mute"):(\\"|[^",]*)'
+           
 
-            [[ $muteStatusResponse =~ $regex ]]; 
-         
-                if [ ${BASH_REMATCH[2]} == true ]; then
+            value=$(extractJsonValue $muteStatusResponse "mute")
+
+            if [ $value == "true" ]; then
                 echo "on"
-                else
-                    echo "off"
-                fi
+           
+            elif [ $value == "false" ]; then
+                echo "off"
+            else
+                echo "error: $value"
+            fi
 
         elif [ "$subcommand" == "on" ]; then
             #mute on
@@ -153,51 +207,58 @@ function volume(){
 
         if [ "$subcommand" == "status" ]; then
             #input status
-
             volumeStatusResponse=$(sendRequest "getStatus")  
-            regex='("volume"):(\\"|[^",]*)'
-
-            [[ $volumeStatusResponse =~ $regex ]]; 
-            echo ${BASH_REMATCH[2]}
+            value=$(extractJsonValue $volumeStatusResponse "volume")
+            echo $value
 
         elif [ "$subcommand" == "up" ] || [ "$subcommand" = "down" ]; then
             
             volumeStatusResponse=$(sendRequest "getStatus")  
-            regex='("volume"):(\\"|[^",]*)'
-
-            [[ $volumeStatusResponse =~ $regex ]]; 
-
-            local volumeValue=${BASH_REMATCH[2]}
             
+            volumeStatusResponse=$(sendRequest "getStatus")  
+            value=$(extractJsonValue $volumeStatusResponse "volume")
+           
             if [ "$subcommand" == "up" ]; then
         
-                newvolume=$((volumeValue + volumeStep))
+                newvolume=$((value + volumeStep))
 
             elif [ "$subcommand" == "down" ]; then
 
-                newvolume=$((volumeValue - volumeStep))
+                newvolume=$((value - volumeStep))
 
             fi
 
-          
-            if ((   ($newvolume >= $avrMin) && ($newvolume <= $volumeLimit) )); then
+            if [ "$newvolume" -ge "$avrMin" ]; then
+    
 
-                volumeStatusResponse=$(sendRequest "setVolume?volume=$newvolume")  
-                echo "ok"
+                if [ "$newvolume" -le "$volumeLimit" ]; then
+    
+
+                      volumeStatusResponse=$(sendRequest "setVolume?volume=$newvolume")  
+                      echo "ok"
+
+                else
+                echo "error $newvolume is bigger than $volumeLimit"
+                fi
+
+
 
             else
-               
-               echo "error $newvolume not between $avrMin and $volumeLimit"
-               
-            fi 
+                echo "error $newvolume is smaller than $avrMin"
+            fi
 
         else
-            
-            if ((   ($subcommand >= $avrMin) && ($subcommand <= $volumeLimit) )); then
+  
+            if [ "$subcommand" -ge "$avrMin" ]; then
 
-                volumeStatusResponse=$(sendRequest "setVolume?volume=$subcommand")
-                echo "ok"
+                if [ "$subcommand" -le "$volumeLimit" ]; then
+    
+                    volumeStatusResponse=$(sendRequest "setVolume?volume=$subcommand")  
+                    echo "ok"
 
+                else
+                    echo "error $newvolume is bigger than $volumeLimit"
+                fi
 
             else
                 #invalid volume value as subcommand
