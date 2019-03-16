@@ -12,10 +12,11 @@ avrMax=160
 avrMin=-800
 
 # volume gets limited to -500 (-50db)
-volumeLimit=-450 # -40,0 db
+volumeLimit=-200 # -40,0 db
 
 volumeStep=5 # increase and decrease 0,5 db
-
+    
+            
 ######################################################################
 
 function sendRequest() {
@@ -241,6 +242,69 @@ function volume(){
 
 ######################################################################
 
+
+
+
+function percentVolume(){
+
+      volumeRange=$((volumeLimit - avrMin))
+      onePercent=$((volumeRange/100)) 
+
+    if [ ! -z "$subcommand" ]; then
+
+        if [ "$subcommand" == "status" ]; then
+            #volume status
+            volumeStatusResponse=$(sendRequest GET "<Main_Zone><Volume><Lvl>GetParam</Lvl></Volume></Main_Zone>") 
+
+            local volumeValue=$(echo ${volumeStatusResponse}|sed 's/.*<Val.//;s/..Val.*//')
+           
+            volumeValueN=$((volumeValue + ($avrMin*-1)))
+            volumePercent=$((volumeValueN / onePercent))
+
+            echo $volumePercent
+
+        else
+            
+           if (( (subcommand <= 100)  && (subcommand >= 0) )); then
+                
+                volumeAbsN=$((onePercent * subcommand))
+                volumeAbs=$((volumeAbsN + avrMin ))
+                
+                if ((   ($volumeAbs >= $avrMin) && ($volumeAbs <= $volumeLimit) )); then
+
+                        volumeStatusResponse=$(sendRequest PUT "<Main_Zone><Volume><Lvl><Val>${volumeAbs}</Val><Exp>1</Exp><Unit>dB</Unit></Lvl></Volume></Main_Zone>")
+                        echo "ok"
+
+
+                    else
+                        #invalid volume value as subcommand
+                        echo "subcommand $command supports only: status, {value}"
+                        echo "subcommand $command supports value between 0 and 100"
+                    fi
+           
+           
+           
+           
+           
+           else
+                echo "invalid percentage value"
+           fi
+
+
+
+            
+          
+        fi
+
+    else 
+        subcommand="status"
+        percentVolume $subcommand
+    fi
+
+}
+
+######################################################################
+
 if $debug
 then
     echo "------"
@@ -267,6 +331,9 @@ case $command in
     volume)
         volume
         ;;
+    percentVolume)
+        percentVolume
+        ;;
     *)
         echo ""
         echo "yamahaAvr.sh {host} {command} {subcommand}"
@@ -276,6 +343,7 @@ case $command in
         echo -e "\t input: {\$inputname|status}"
         echo -e "\t mute: {on|off|status}"   
         echo -e "\t volume: {up|down|status|\$value}"   
+        echo -e "\t volume: {status|\$value}"
         echo ""
     
 esac
