@@ -212,9 +212,7 @@ function volume(){
             echo $value
 
         elif [ "$subcommand" == "up" ] || [ "$subcommand" = "down" ]; then
-            
-            volumeStatusResponse=$(sendRequest "getStatus")  
-            
+                   
             volumeStatusResponse=$(sendRequest "getStatus")  
             value=$(extractJsonValue $volumeStatusResponse "volume")
            
