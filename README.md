@@ -26,3 +26,12 @@ power: {off|status}
 input: {$inputname|status} --> tv,sat,hdmi1,hdmi2,...,hdmiside,ext1,ypbpr,vga
 mute: {on|off|status}
 volume: {up|down|status|$value}
+
+
+# philipsHue
+Power & Dim Philips Hue Bridge Lamps
+philipsHue.sh {bridgeIp} {username} {command} {lampId} {subcommand}
+commands:
+power: {on|off|status|toggle}    
+brightness: {up|down|status|\$value}
+bridge $deviceName
