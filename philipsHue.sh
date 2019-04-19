@@ -19,18 +19,18 @@ userUrl=$apiUrl$username
 # response: [{"success": {"username": "E538lje4yg3wqpOnP49QQD1B7z-36IGSbJgdCZdc"}}]
 
 ################################## CORE ###############################
-function setPowerStatus(){
-  local lightId=$1
-  local onOff=$2
-  local url=$userUrl/lights/$lightId/state
+setPowerStatus () {
+  lightId=$1
+  onOff=$2
+  url=$userUrl/lights/$lightId/state
 
   result=$(curl -s --request PUT --data "{\"on\":$onOff}" $url)
 
 }
-function getPowerStatus(){
+getPowerStatus () {
 
-    local lightId=$1
-    local url=$userUrl/lights/$lightId/
+    lightId=$1
+    url=$userUrl/lights/$lightId/
 
     DATA=$(curl -s --request GET $url)
 
@@ -47,19 +47,20 @@ function getPowerStatus(){
     fi
 
 }
-function setBrightness(){
-    local lightId=$1
-    local brightness=$2
-    local url=$userUrl/lights/$lightId/state
+setBrightness () {
+    lightId=$1
+    brightness=$2
+    url=$userUrl/lights/$lightId/state
 
     result=$(curl -s --request PUT --data "{\"on\":true,\"bri\":$brightness}" $url)
 
     echo $result
 }
-function getBrightnessStatus(){
 
-    local lightId=$1
-    local url=$userUrl/lights/$lightId/
+getBrightnessStatus () {
+
+    lightId=$1
+    url=$userUrl/lights/$lightId/
 
     RESPONSE=$(curl -s --request GET $url)
 
@@ -69,7 +70,7 @@ function getBrightnessStatus(){
     echo $post
 
 }
-function bridge(){
+bridge () {
 
      if [ ! -z "$subcommand" ]; then
 
@@ -129,20 +130,20 @@ function bridge(){
 }
 
 ################################## EXTENDED ###########################
-function power(){
+power () {
     
     if [ ! -z "$subcommand" ]; then
-        if [ "$subcommand" == "on" ]; then
+        if [ "$subcommand" = "on" ]; then
             #power on
             setPowerStatus $lampId true
             echo "ok"
         
-        elif [ "$subcommand" == "off" ]; then
+        elif [ "$subcommand" = "off" ]; then
             #power off
             setPowerStatus $lampId false
             echo "ok"
 
-        elif [ "$subcommand" == "toggle" ]; then
+        elif [ "$subcommand" = "toggle" ]; then
             #toggle power status
             #power status
             powerStatusResponse=$(getPowerStatus $lampId)  
@@ -159,7 +160,7 @@ function power(){
                 echo "error: $value"
             fi
 
-        elif [ "$subcommand" == "status" ]; then
+        elif [ "$subcommand" = "status" ]; then
 
             #power status
             powerStatusResponse=$(getPowerStatus $lampId)  
@@ -185,7 +186,7 @@ function power(){
     fi
 
 }
-function brightness(){
+brightness () {
 
       if [ ! -z "$subcommand" ]; then
 
